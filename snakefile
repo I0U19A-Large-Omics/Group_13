@@ -9,7 +9,7 @@ rule all:
     input:
         expand("010.fastqc/{sample}_fastqc.html", sample=allsamples),
         expand("010.fastqc/{sample}_fastqc.zip", sample=allsamples)
-
+    
 #Fastqc rule
 rule fastqc:
     input:
