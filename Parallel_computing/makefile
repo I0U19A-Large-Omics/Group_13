@@ -57,6 +57,7 @@ test_time/test_serial_scored_snps.tsv: test/test_snps_only.tsv
 	time (cat $< | while read line; do bash fake_enformer_score_snps.sh "$$line"; done > $@)
 
 # Benchmark different parallelization settings, you can run each with make test_time/test_pX_scored_snps.tsv, where X is the number of parallel processes.
+# Of course does not make sense to run with lot of parallel processes if you have only a few SNPs.
 test_time/test_p10_scored_snps.tsv: test/test_snps_only.tsv
 	mkdir -p test_time
 	time (cat $< | xargs -L 1 -P 10 -I{} bash fake_enformer_score_snps.sh "{}" > $@)
@@ -73,7 +74,12 @@ test_time/test_p100_scored_snps.tsv: test/test_snps_only.tsv
 	mkdir -p test_time
 	time (cat $< | xargs -L 1 -P 100 -I{} bash fake_enformer_score_snps.sh "{}" > $@)
 
-# ?? needed in benchmark
+
+# clean ?? needed in benchmark
+# to run benchmarking, you need to run the following command:
+#chmod +x benchmark.sh
+#./benchmark.sh
+
 .PHONY: clean
 clean:
-    rm -f *_scored_snps.tsv *.time
+	rm -f *_scored_snps.tsv *.time

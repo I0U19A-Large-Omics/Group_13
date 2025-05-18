@@ -20,6 +20,3 @@ time make test_time/test_p50_scored_snps.tsv 2>&1 | tee p50.time
 echo "5. 100 parallel processes"
 make clean
 time make test_time/test_p100_scored_snps.tsv 2>&1 | tee p100.time
-
-echo "Creating report..."
-python3 generate_report.py
