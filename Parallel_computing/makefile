@@ -9,20 +9,20 @@
 # In a Makefile, $@ refers to the target of the rule, while $< refers to the first prerequisite (input file) of the rule.
 
 #Import and copy the input annotated VCF file to the current working directory
-snps.annotated.vcf: /lustre1/project/stg_00079/teaching/data/snps.annotated.vcf
+data/snps.annotated.vcf: /lustre1/project/stg_00079/teaching/data/snps.annotated.vcf
 	cp $< $@ 
 
 # Extract only the SNPs from the annotated VCF file (getting rid of lines with ##)
-snps_only.tsv: snps.annotated.vcf
-	bash extract_snps.sh $< $@ 
+data/snps_only.tsv: data/snps.annotated.vcf
+	bash scripts/extract_snps.sh $< $@ 
 
 # Only keep the first 5 lines of the SNPs file for testing purposes
-test/test_snps_only.tsv: snps_only.tsv
+test/test_snps_only.tsv: data/snps_only.tsv
 	mkdir -p test
-	head -n 5 $< > $@
+	head -n 25 $< > $@
 
 # Create a header file for the VCF file
-headers.txt: snps.annotated.vcf
+data/headers.txt: data/snps.annotated.vcf
 	grep "^#" $< > $@
 
 # Uses fake_enformer_score_snps.sh to score the SNPs in the snps_only.tsv file
@@ -33,20 +33,20 @@ headers.txt: snps.annotated.vcf
 # -I{} : replaces {} with the argument passed to the command.
 # bash fake_enformer_score_snps.sh "{}" : runs the script fake_enformer_score_snps.sh with the SNP as an argument.
 # The output of the script is redirected to the file $@, which is the target of the rule.
-scored_snps.tsv: snps_only.tsv
-	cat $< | xargs -L 1 -P 100 -I{} bash fake_enformer_score_snps.sh "{}" > $@
+data/scored_snps.tsv: data/snps_only.tsv
+	cat $< | xargs -L 1 -P 100 -I{} bash scripts/fake_enformer_score_snps.sh "{}" > $@
 
 # Create a complete VCF file with the headers and the scored SNPs, run with make complete_scored_snps.vcf
-complete_scored_snps.vcf: headers.txt scored_snps.tsv
+data/complete_scored_snps.vcf: data/headers.txt data/scored_snps.tsv
 	cat $^ > $@
 
 # Uses fake_enformer_score_snps.sh to score the SNPs in the test file
 test/test_scored_snps.tsv: test/test_snps_only.tsv
 	mkdir -p test
-	cat $< | xargs -L 1 -P 100 -I{} bash fake_enformer_score_snps.sh "{}" > $@
+	cat $< | xargs -L 1 -P 100 -I{} bash scripts/fake_enformer_score_snps.sh "{}" > $@
 
 # Create a complete test VCF file with the headers and the scored SNPs, run with make test/test_complete_scored_snps.vcf
-test/test_complete_scored_snps.vcf: headers.txt test/test_scored_snps.tsv
+test/test_complete_scored_snps.vcf: data/headers.txt test/test_scored_snps.tsv
 	mkdir -p test
 	cat $^ > $@
 
@@ -54,25 +54,25 @@ test/test_complete_scored_snps.vcf: headers.txt test/test_scored_snps.tsv
 # Serial processing (no parallelization), you can run this with make test_time/test_serial_scored_snps.tsv
 test_time/test_serial_scored_snps.tsv: test/test_snps_only.tsv
 	mkdir -p test_time
-	time (cat $< | while read line; do bash fake_enformer_score_snps.sh "$$line"; done > $@)
+	time (cat $< | while read line; do bash scripts/fake_enformer_score_snps.sh "$$line"; done > $@)
 
 # Benchmark different parallelization settings, you can run each with make test_time/test_pX_scored_snps.tsv, where X is the number of parallel processes.
 # Of course does not make sense to run with lot of parallel processes if you have only a few SNPs.
 test_time/test_p10_scored_snps.tsv: test/test_snps_only.tsv
 	mkdir -p test_time
-	time (cat $< | xargs -L 1 -P 10 -I{} bash fake_enformer_score_snps.sh "{}" > $@)
+	time (cat $< | xargs -L 1 -P 10 -I{} bash scripts/fake_enformer_score_snps.sh "{}" > $@)
 
 test_time/test_p25_scored_snps.tsv: test/test_snps_only.tsv
 	mkdir -p test_time
-	time (cat $< | xargs -L 1 -P 25 -I{} bash fake_enformer_score_snps.sh "{}" > $@)
+	time (cat $< | xargs -L 1 -P 25 -I{} bash scripts/fake_enformer_score_snps.sh "{}" > $@)
 
 test_time/test_p50_scored_snps.tsv: test/test_snps_only.tsv
 	mkdir -p test_time
-	time (cat $< | xargs -L 1 -P 50 -I{} bash fake_enformer_score_snps.sh "{}" > $@)
+	time (cat $< | xargs -L 1 -P 50 -I{} bash scripts/fake_enformer_score_snps.sh "{}" > $@)
 
 test_time/test_p100_scored_snps.tsv: test/test_snps_only.tsv
 	mkdir -p test_time
-	time (cat $< | xargs -L 1 -P 100 -I{} bash fake_enformer_score_snps.sh "{}" > $@)
+	time (cat $< | xargs -L 1 -P 100 -I{} bash scripts/fake_enformer_score_snps.sh "{}" > $@)
 
 
 # clean ?? needed in benchmark
@@ -82,4 +82,4 @@ test_time/test_p100_scored_snps.tsv: test/test_snps_only.tsv
 
 .PHONY: clean
 clean:
-	rm -f *_scored_snps.tsv *.time
+	rm -f test_time/*_scored_snps.tsv *.time
